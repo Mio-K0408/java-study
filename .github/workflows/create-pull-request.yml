@@ -1,0 +1,41 @@
+name: Create Pull Request
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create pull request if it does not exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+        run: |
+          EXISTING_PR=$(gh pr list \
+            --head "$HEAD_BRANCH" \
+            --base main \
+            --state open \
+            --json number \
+            --jq 'length')
+
+          if [ "$EXISTING_PR" -eq 0 ]; then
+            gh pr create \
+              --base main \
+              --head "$HEAD_BRANCH" \
+              --title "Merge $HEAD_BRANCH into main" \
+              --body "GitHub Actionsによって自動作成されたPull Requestです。" \
+              --draft
+          else
+            echo "Pull Request already exists."
+          fi
